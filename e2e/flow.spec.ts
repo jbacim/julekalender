@@ -22,6 +22,10 @@ async function readRoundWord(page: Page, day: number): Promise<string> {
 }
 
 test.beforeEach(async ({ page }) => {
+  // "Gem som app?" vises én gang på enheder, der kan installere – luk den, når den dukker op
+  await page.addLocatorHandler(page.getByRole('dialog', { name: 'Gem Julekalender som app?' }), async (d) => {
+    await d.getByRole('button', { name: /OK|Ikke nu/ }).click();
+  });
   await page.clock.setFixedTime(new Date('2026-12-03T10:00:00+01:00'));
 });
 
@@ -64,6 +68,11 @@ test('profil, låge, spil og resultat på tablet og mobil', async ({ page }, inf
   await page.getByRole('button', { name: 'Se mit træ' }).click();
   await expect(page.getByRole('button', { name: 'Drej til venstre' })).toBeVisible({ timeout: 10000 });
   await page.getByRole('button', { name: 'Drej til venstre' }).click();
+  // Børnene kan selv sende gæster forbi
+  await page.getByRole('button', { name: 'Send rensdyr' }).click();
+  await page.getByRole('button', { name: 'Send yeti' }).click();
+  await page.getByRole('button', { name: 'Send yeti' }).click();
+  await page.waitForTimeout(8000);
   await page.waitForTimeout(800);
   await noHorizontalScroll(page);
   await page.screenshot({ path: `test-results/${info.project.name}-5-trae.png` });

@@ -5,6 +5,7 @@ import { App } from './App';
 import { setup, setDate } from '../test/helpers';
 import { DANISH_ALPHABET } from '../domain/letters';
 import { KEYBOARD_ROWS } from './components/Keyboard';
+import { setupPwa } from '../services/pwa';
 
 // Lyd og canvas findes ikke i jsdom – stil dem af.
 HTMLCanvasElement.prototype.getContext = vi.fn(() => null) as never;
@@ -25,6 +26,47 @@ async function currentWord(service: ReturnType<typeof setup>['service'], profile
   const yp = await service.getYear(p.id, 2026);
   return yp!.days[day]!.round!.word.normalized;
 }
+
+describe('app-installation', () => {
+  it('spørger én gang om at gemme som app, når browseren tilbyder installation', async () => {
+    setupPwa();
+    const promptFn = vi.fn(async () => undefined);
+    const ev = Object.assign(new Event('beforeinstallprompt', { cancelable: true }), {
+      prompt: promptFn,
+      userChoice: Promise.resolve({ outcome: 'accepted' as const }),
+    });
+    window.dispatchEvent(ev);
+
+    const { service } = setup([2026, 12, 3]);
+    const p = await service.createProfile({ nickname: 'App', avatar: 'kat', difficulty: 'easy' });
+    await service.saveSettings({ schema: 1, soundOn: false, speechOn: false, reducedEffects: true, activeProfileId: p.id });
+    const user = userEvent.setup();
+    const { unmount } = render(<App service={service} />);
+    const dialog = await screen.findByRole('dialog', { name: 'Gem Julekalender som app?' }, { timeout: 5000 });
+    await user.click(within(dialog).getByRole('button', { name: 'Installer' }));
+    expect(promptFn).toHaveBeenCalledTimes(1);
+    await waitFor(async () => expect((await service.getSettings()).installPromptSeen).toBe(true));
+    unmount();
+
+    // Næste gang (også selvom browseren tilbyder installation igen) spørges der ikke
+    window.dispatchEvent(Object.assign(new Event('beforeinstallprompt'), { prompt: vi.fn(), userChoice: Promise.resolve({ outcome: 'dismissed' as const }) }));
+    render(<App service={service} />);
+    await screen.findByRole('status', { name: '0 gaver i alt' });
+    await new Promise((r) => setTimeout(r, 3000));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  }, 15000);
+
+  it('spørger ikke, når enheden ikke kan installere', async () => {
+    window.dispatchEvent(new Event('appinstalled')); // nulstil installationstilbud fra forrige test
+    const { service } = setup([2026, 12, 3]);
+    const p = await service.createProfile({ nickname: 'Ingen', avatar: 'kat', difficulty: 'easy' });
+    await service.saveSettings({ schema: 1, soundOn: false, speechOn: false, reducedEffects: true, activeProfileId: p.id, installPromptSeen: undefined });
+    render(<App service={service} />);
+    await screen.findByRole('status', { name: '0 gaver i alt' });
+    await new Promise((r) => setTimeout(r, 3000));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  }, 15000);
+});
 
 describe('app-flow', () => {
   it('opret profil, åbn dagens låge, vind og se gaver og pynt', async () => {

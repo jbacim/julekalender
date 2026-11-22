@@ -51,6 +51,19 @@ const SANTA_PATH = new THREE.CatmullRomCurve3(
 );
 const SANTA_FLIGHT = 16;
 
+export type VisitorKind = 'reindeer' | 'yeti';
+
+interface Visitor {
+  kind: VisitorKind;
+  obj: THREE.Group;
+  t0: number;
+  dir: 1 | -1;
+  z: number;
+  rig?: ReturnType<typeof buildYeti>;
+  /** Yetiens stoppested (verdens-x), valgt så den er i billedet og ikke bag træet. */
+  stopX: number;
+}
+
 export interface WorldOptions {
   quality: QualityTier;
   reducedMotion: boolean;
@@ -122,22 +135,12 @@ export class ThreeWorld {
   private sparkleProgress = 0;
   private trail: THREE.Points;
   private camTarget = new THREE.Vector3();
-  /** Besøgende i baggrunden: et rensdyr af og til, en sjælden yeti med nissehue. */
-  private visitor: {
-    kind: 'reindeer' | 'yeti';
-    obj: THREE.Group;
-    t0: number;
-    dir: 1 | -1;
-    z: number;
-    rig?: ReturnType<typeof buildYeti>;
-    /** Yetiens stoppested (verdens-x), valgt så den er i billedet og ikke bag træet. */
-    stopX: number;
-  } | null = null;
+  /** Besøgende i baggrunden: et rensdyr af og til, en sjælden yeti – eller sendt med knapperne. */
+  private visitors: Visitor[] = [];
   private nextVisitorAt = 8 + Math.random() * 14;
   private santa: { rig: SantaRig; t0: number; arriving: boolean } | null = null;
   private onDevVisitor = (e: Event) => {
-    const kind = (e as CustomEvent).detail === 'yeti' ? 'yeti' : 'reindeer';
-    this.spawnVisitor(kind, this.clock.getElapsed());
+    this.sendVisitor((e as CustomEvent).detail === 'yeti' ? 'yeti' : 'reindeer');
   };
   private litAmount = 0;
   private idleAz = 0;
@@ -797,11 +800,23 @@ export class ThreeWorld {
     obj.parent?.remove(obj);
   }
 
-  /** Chance for at en besøgende er yetien (ellers et rensdyr). */
+  /** Chance for at en tilfældig besøgende er yetien (ellers et rensdyr). */
   static YETI_CHANCE = 0.1;
+  /** Højst så mange besøgende ad gangen (knapperne kan trykkes ivrigt). */
+  static MAX_VISITORS = 6;
 
-  private spawnVisitor(kind: 'reindeer' | 'yeti', now: number): void {
-    this.removeVisitor();
+  /**
+   * Sender en besøgende forbi med det samme (knapperne i "Se mit træ").
+   * Virker også ved reduceret bevægelse, fordi barnet selv har bedt om det.
+   */
+  sendVisitor(kind: VisitorKind): void {
+    if (this.finale || this.disposed) return;
+    this.spawnVisitor(kind, this.clock.getElapsed());
+    this.updateRunning();
+  }
+
+  private spawnVisitor(kind: VisitorKind, now: number): void {
+    if (this.visitors.length >= ThreeWorld.MAX_VISITORS) this.removeVisitor(this.visitors[0]);
     const dir: 1 | -1 = Math.random() < 0.5 ? 1 : -1;
     const obj = new THREE.Group();
     let rig: ReturnType<typeof buildYeti> | undefined;
@@ -818,8 +833,12 @@ export class ThreeWorld {
       obj.add(rig.group);
     }
     obj.rotation.y = dir === 1 ? 0 : Math.PI;
-    const z = kind === 'yeti' ? -6.8 : -7.5 - Math.random() * 1.5;
-    this.visitor = { kind, obj, t0: now, dir, z, rig, stopX: this.visibleStopX(z) };
+    // Lidt forskellig dybde, så flere besøgende ikke går oven i hinanden
+    const z = kind === 'yeti' ? -6.4 - Math.random() * 1.2 : -7.2 - Math.random() * 2;
+    // Flere yetier ad gangen stopper forskellige steder
+    const stopX = this.visibleStopX(z) + (this.visitors.filter((v) => v.kind === 'yeti').length % 3) * -2.3;
+    const v: Visitor = { kind, obj, t0: now, dir, z, rig, stopX };
+    this.visitors.push(v);
     this.scene.add(obj);
   }
 
@@ -841,71 +860,62 @@ export class ThreeWorld {
     return best;
   }
 
-  private removeVisitor(): void {
-    if (!this.visitor) return;
-    const geos = new Set<THREE.BufferGeometry>();
-    this.visitor.obj.traverse((o) => {
-      const m = o as THREE.Mesh;
-      if (m.geometry) geos.add(m.geometry);
-    });
-    geos.forEach((g) => g.dispose());
-    this.scene.remove(this.visitor.obj);
-    this.visitor = null;
+  private removeVisitor(v: Visitor): void {
+    this.disposeObject(v.obj);
+    this.visitors = this.visitors.filter((x) => x !== v);
   }
 
-  /** Planlægger og bevæger besøgende. Ingen besøg under finalen eller ved reduceret bevægelse. */
-  private tickVisitor(now: number): boolean {
-    if (!this.visitor) {
+  /** Planlægger tilfældige besøg og bevæger alle besøgende. Ingen tilfældige besøg under finalen eller ved reduceret bevægelse. */
+  private tickVisitors(now: number): boolean {
+    if (this.visitors.length === 0) {
       if (this.finale || this.opts.reducedMotion || now < this.nextVisitorAt) return false;
       this.spawnVisitor(Math.random() < ThreeWorld.YETI_CHANCE ? 'yeti' : 'reindeer', now);
     }
-    const v = this.visitor!;
+    for (const v of [...this.visitors]) this.tickVisitor(v, now);
+    if (this.visitors.length === 0) this.nextVisitorAt = now + 25 + Math.random() * 35;
+    return true;
+  }
+
+  private tickVisitor(v: Visitor, now: number): void {
     const t = now - v.t0;
     const span = 15;
     if (v.kind === 'reindeer') {
       // Galopperer hen over sneen bag træet
-      const dur = 7;
-      const u = t / dur;
+      const u = t / 7;
       v.obj.position.set(v.dir * THREE.MathUtils.lerp(-span, span, u), Math.abs(Math.sin(t * 7)) * 0.35, v.z);
       v.obj.rotation.z = v.dir * Math.sin(t * 7) * 0.08;
-      if (u >= 1) this.finishVisitor(now);
-    } else {
-      // Yetien tramper roligt forbi, stopper på midten og vinker
-      const walk1 = 7;
-      const wave = 2.6;
-      const walk2 = 7;
-      const rig = v.rig!;
-      let x: number;
-      let walking = true;
-      const stop = v.stopX * v.dir;
-      if (t < walk1) x = THREE.MathUtils.lerp(-span, stop, t / walk1);
-      else if (t < walk1 + wave) {
-        x = stop;
-        walking = false;
-      } else x = THREE.MathUtils.lerp(stop, span, (t - walk1 - wave) / walk2);
-      v.obj.position.set(v.dir * x, walking ? Math.abs(Math.sin(t * 4)) * 0.08 : 0, v.z);
-      const swing = walking ? Math.sin(t * 4) * 0.5 : 0;
-      rig.legL.rotation.x = swing;
-      rig.legR.rotation.x = -swing;
-      rig.armL.rotation.set(-swing * 0.8, 0, -0.2);
-      if (walking) {
-        rig.armR.rotation.set(swing * 0.8, 0, 0.2);
-        rig.group.rotation.y = Math.PI / 2;
-      } else {
-        // Vender sig mod kameraet og vinker
-        const k = Math.max(0, Math.min(1, (t - walk1) / 0.4, (walk1 + wave - t) / 0.4));
-        const toCam = Math.atan2(this.camera.position.x - v.obj.position.x, this.camera.position.z - v.obj.position.z) - v.obj.rotation.y;
-        rig.group.rotation.y = THREE.MathUtils.lerp(Math.PI / 2, toCam, k);
-        rig.armR.rotation.set(0, 0, 0.2 + k * (2.6 + Math.sin(t * 9) * 0.35));
-      }
-      if (t >= walk1 + wave + walk2) this.finishVisitor(now);
+      if (u >= 1) this.removeVisitor(v);
+      return;
     }
-    return true;
-  }
-
-  private finishVisitor(now: number): void {
-    this.removeVisitor();
-    this.nextVisitorAt = now + 25 + Math.random() * 35;
+    // Yetien tramper roligt forbi, stopper et synligt sted og vinker
+    const walk1 = 7;
+    const wave = 2.6;
+    const walk2 = 7;
+    const rig = v.rig!;
+    let x: number;
+    let walking = true;
+    const stop = v.stopX * v.dir;
+    if (t < walk1) x = THREE.MathUtils.lerp(-span, stop, t / walk1);
+    else if (t < walk1 + wave) {
+      x = stop;
+      walking = false;
+    } else x = THREE.MathUtils.lerp(stop, span, (t - walk1 - wave) / walk2);
+    v.obj.position.set(v.dir * x, walking ? Math.abs(Math.sin(t * 4)) * 0.08 : 0, v.z);
+    const swing = walking ? Math.sin(t * 4) * 0.5 : 0;
+    rig.legL.rotation.x = swing;
+    rig.legR.rotation.x = -swing;
+    rig.armL.rotation.set(-swing * 0.8, 0, -0.2);
+    if (walking) {
+      rig.armR.rotation.set(swing * 0.8, 0, 0.2);
+      rig.group.rotation.y = Math.PI / 2;
+    } else {
+      // Vender sig mod kameraet og vinker
+      const k = Math.max(0, Math.min(1, (t - walk1) / 0.4, (walk1 + wave - t) / 0.4));
+      const toCam = Math.atan2(this.camera.position.x - v.obj.position.x, this.camera.position.z - v.obj.position.z) - v.obj.rotation.y;
+      rig.group.rotation.y = THREE.MathUtils.lerp(Math.PI / 2, toCam, k);
+      rig.armR.rotation.set(0, 0, 0.2 + k * (2.6 + Math.sin(t * 9) * 0.35));
+    }
+    if (t >= walk1 + wave + walk2) this.removeVisitor(v);
   }
 
   private setCameraSpherical(theta: number, phi: number, radius: number): void {
@@ -991,7 +1001,7 @@ export class ThreeWorld {
       this.tickFinale(now, dt);
       animating = true;
     }
-    if (this.tickVisitor(now)) animating = true;
+    if (this.tickVisitors(now)) animating = true;
     if (this.tickSanta(now, dt) && !this.opts.reducedMotion) animating = true;
     if (this.sparkleProgress > 0 && !this.finale) {
       this.updateSparkles(now);
@@ -1048,7 +1058,7 @@ export class ThreeWorld {
     this.interObs?.disconnect();
     document.removeEventListener('visibilitychange', this.onVisibility);
     if (import.meta.env.DEV) window.removeEventListener('julekalender:visitor', this.onDevVisitor);
-    this.removeVisitor();
+    for (const v of [...this.visitors]) this.removeVisitor(v);
     if (this.santa) this.disposeObject(this.santa.rig.group);
     this.renderer.domElement.removeEventListener('webglcontextlost', this.onContextLost);
     this.controls.dispose();

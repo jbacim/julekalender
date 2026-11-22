@@ -28,6 +28,8 @@ interface Props {
   santa?: boolean;
   /** Vis kun julemanden parkeret (ingen landing), fx under finalen. */
   santaParkedOnly?: boolean;
+  /** Vis knapper, så barnet selv kan sende et rensdyr eller en yeti forbi (kun i 3D). */
+  visitorButtons?: boolean;
 }
 
 /**
@@ -47,8 +49,8 @@ type Mode = 'loading' | '3d' | '2d';
  * Viser juleverdenen. 3D indlæses separat (egen chunk), så UI'et aldrig venter på den.
  * Uden WebGL eller ved tabt grafikkontekst bruges en pæn 2D-version med samme optjente pynt.
  */
-export function WorldView({ rewards, gifts, lit, interactive = false, finale, label, className, santa = false, santaParkedOnly = false }: Props) {
-  const { reducedMotion, settings } = useApp();
+export function WorldView({ rewards, gifts, lit, interactive = false, finale, label, className, santa = false, santaParkedOnly = false, visitorButtons = false }: Props) {
+  const { reducedMotion, settings, play } = useApp();
   const hostRef = useRef<HTMLDivElement>(null);
   const worldRef = useRef<ThreeWorld | null>(null);
   const [mode, setMode] = useState<Mode>(() => (hasWebGL() ? 'loading' : '2d'));
@@ -168,7 +170,59 @@ export function WorldView({ rewards, gifts, lit, interactive = false, finale, la
           </button>
         </div>
       )}
+      {mode === '3d' && visitorButtons && !finale && (
+        <div className="visitor-buttons" role="group" aria-label="Send en gæst forbi">
+          <button
+            type="button"
+            className="visitor-btn"
+            onClick={() => {
+              play('tap');
+              worldRef.current?.sendVisitor('reindeer');
+            }}
+          >
+            <ReindeerIcon /> Send rensdyr
+          </button>
+          <button
+            type="button"
+            className="visitor-btn visitor-btn--yeti"
+            onClick={() => {
+              play('tap');
+              worldRef.current?.sendVisitor('yeti');
+            }}
+          >
+            <YetiIcon /> Send yeti
+          </button>
+        </div>
+      )}
       {mode === '2d' && <p className="world-note">Enkel tegnet visning</p>}
     </div>
+  );
+}
+
+function ReindeerIcon() {
+  return (
+    <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
+      <path d="M11 6 l-3 -4 M11 6 l2 -4 M11 6 l-4 1 M21 6 l3 -4 M21 6 l-2 -4 M21 6 l4 1" stroke="#7a4f2e" strokeWidth="1.8" strokeLinecap="round" fill="none" />
+      <ellipse cx="16" cy="16" rx="8" ry="9" fill="#a66d45" />
+      <ellipse cx="16" cy="21" rx="5" ry="4" fill="#e2c3a0" />
+      <circle cx="13" cy="14" r="1.4" fill="#2a1d18" />
+      <circle cx="19" cy="14" r="1.4" fill="#2a1d18" />
+      <circle cx="16" cy="19.5" r="2.6" fill="#e3343f" />
+    </svg>
+  );
+}
+
+function YetiIcon() {
+  return (
+    <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
+      <path d="M8 13 Q12 1 22 3 Q27 5 26 10 Z" fill="#d52b3a" />
+      <circle cx="26" cy="10" r="2.4" fill="#f6f2ea" />
+      <rect x="6" y="11" width="20" height="4" rx="2" fill="#f6f2ea" />
+      <circle cx="16" cy="20" r="10" fill="#f4f7fb" stroke="#c9d6e6" />
+      <ellipse cx="16" cy="21" rx="6.5" ry="5.5" fill="#8fa3bf" />
+      <circle cx="13.5" cy="19.5" r="1.3" fill="#1d2433" />
+      <circle cx="18.5" cy="19.5" r="1.3" fill="#1d2433" />
+      <path d="M13 23 Q16 25.5 19 23" stroke="#1d2433" strokeWidth="1.3" fill="none" strokeLinecap="round" />
+    </svg>
   );
 }

@@ -51,7 +51,7 @@ Vigtige beslutninger:
 
 - **Juleaftensfinalen** varer ca. 30 sekunder. Nissen går med sækken fra hytten, gaverne flyver ud på bunken, stjernen spiraler op i toppen, lyset breder sig op gennem træet, og nissen vinker. Undervejs vises korte tekster. Tempo og kameraets keyframes står i `src/world/finaleScript.ts`. Ved reduceret bevægelse vises en rolig version på ca. 8 sekunder.
 - **Julemanden** flyver ind og lander med kane og fire rensdyr (Rudolf forrest) den 24. december. Landingen vises én gang pr. session; derefter står kanen parkeret. I 2D-visningen flyver en kanesilhuet forbi månen.
-- **Besøgende i baggrunden:** Et rensdyr galopperer af og til forbi. Sjældent (10 %, `ThreeWorld.YETI_CHANCE`) kommer en yeti med nissehue, stopper og vinker. Der kommer ingen besøgende under finalen eller ved reduceret bevægelse. Udviklerværktøjet kan sende begge med det samme.
+- **Besøgende i baggrunden:** Et rensdyr galopperer af og til forbi. Sjældent (10 %, `ThreeWorld.YETI_CHANCE`) kommer en yeti med nissehue, stopper og vinker. I **"Se mit træ"** kan børnene selv trykke **Send rensdyr** og **Send yeti** (højst 6 gæster ad gangen). Der kommer ingen tilfældige besøgende under finalen eller ved reduceret bevægelse, men knapperne virker stadig.
 
 ## Lagring og begrænsninger
 
@@ -98,6 +98,7 @@ Siden kan gemmes på hjemmeskærmen og åbner så i fuld skærm, også offline.
 - `public/manifest.webmanifest` indeholder navn, farver og ikoner.
 - `public/sw.js` er service workeren. Navigationer hentes fra netværket først; øvrige filer hentes fra cachen først. Hæv `CACHE`-navnet, hvis cachen skal tømmes helt.
 - `src/services/pwa.ts` registrerer service workeren (kun i produktion), fanger installationsprompten og beder browseren om varig lagring.
+- Første gang forsiden vises på en enhed, der kan installere (og ikke allerede kører som app), spørger en venlig dialog **én gang**: "Gem Julekalender som app?". At den er vist, gemmes i indstillingerne (`installPromptSeen`).
 - Forældreområdet har kortet **Gem som app**: en direkte knap på Android/Chrome/Edge og en vejledning på iPhone/iPad (Safari → Del → Føj til hjemmeskærm).
 - Ikonerne laves ud fra `public/icons/icon.svg` med `node scripts/generate-icons.mjs`.
 - På iOS har en installeret app sin egen lagring adskilt fra Safari, så fremskridt følger ikke med. Det står også i forældreområdet.

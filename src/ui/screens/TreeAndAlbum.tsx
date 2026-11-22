@@ -30,6 +30,7 @@ export function TreeScreen({ year }: { year: number }) {
               gifts={gifts}
               lit={hasStar(yp)}
               santa={santaDay}
+              visitorButtons
               interactive
               label={`Juletræ ${year} med ${rewards.length} ${rewards.length === 1 ? 'dekoration' : 'dekorationer'}`}
             />

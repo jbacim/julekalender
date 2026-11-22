@@ -1,6 +1,10 @@
 import { expect, test } from '@playwright/test';
 
 test('juleaftensfinale i 3D: stjerne, 240 gaver og roterbart træ', async ({ page }, info) => {
+  // "Gem som app?" vises én gang på enheder, der kan installere – luk den, når den dukker op
+  await page.addLocatorHandler(page.getByRole('dialog', { name: 'Gem Julekalender som app?' }), async (d) => {
+    await d.getByRole('button', { name: /OK|Ikke nu/ }).click();
+  });
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));

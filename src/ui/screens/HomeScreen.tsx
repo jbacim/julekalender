@@ -7,6 +7,7 @@ import { CalendarBoard } from '../components/CalendarBoard';
 import { GiftCounter, Notices, TopBar } from '../components/common';
 import { WorldView } from '../world/WorldView';
 import { Nisse } from '../art/Nisse';
+import { InstallPrompt } from '../components/InstallPrompt';
 
 export function HomeScreen() {
   const { activeProfile, today, navigate, notify, play, speak, canSpeak } = useApp();
@@ -59,6 +60,7 @@ export function HomeScreen() {
         <GiftCounter gifts={gifts} />
       </TopBar>
       <Notices />
+      <InstallPrompt />
       <main className="home-layout">
         <div className="home-calendar">
           {!inSeason && (

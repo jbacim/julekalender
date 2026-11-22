@@ -126,6 +126,8 @@ export interface AppSettings {
   speechOn: boolean;
   reducedEffects: boolean;
   activeProfileId?: string;
+  /** Sand når "Gem som app?" er vist én gang på denne enhed. */
+  installPromptSeen?: boolean;
 }
 
 export interface PoolCycle {

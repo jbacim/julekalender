@@ -84,5 +84,6 @@ export function normalizeSettings(v: unknown): AppSettings {
     speechOn: typeof v.speechOn === 'boolean' ? v.speechOn : DEFAULT_SETTINGS.speechOn,
     reducedEffects: typeof v.reducedEffects === 'boolean' ? v.reducedEffects : DEFAULT_SETTINGS.reducedEffects,
     activeProfileId: isStr(v.activeProfileId) ? v.activeProfileId : undefined,
+    installPromptSeen: v.installPromptSeen === true ? true : undefined,
   };
 }
