@@ -9,7 +9,7 @@ import {
   type RoundTarget,
   type StartError,
 } from '../domain/progress';
-import { applyGuess, createRound, markHintUsed, type GuessEffect } from '../domain/round';
+import { applyGuess, createRound, giftsSavedFor, markHintUsed, type GuessEffect } from '../domain/round';
 import { drawFromCycle, newCycle, selectCalendarWords, snapshot } from '../domain/selection';
 import type {
   AppSettings,
@@ -304,6 +304,8 @@ export class GameService {
         profileId: profile.id,
         cycle: newCycle(ids, this.rng),
         wordsSolved: 0,
+        wordsLost: 0,
+        score: 0,
         revision: 0,
       };
       const { word, cycle } = drawFromCycle(base.cycle, this.content.freeplay, this.rng);
@@ -319,9 +321,17 @@ export class GameService {
       if (!cur?.round || cur.round.id !== roundId) return { next: undefined, result: null };
       const g = applyGuess(cur.round, letter, now);
       if (g.round === cur.round) return { next: undefined, result: g };
-      const solved = g.finished && g.round.status === 'won' ? 1 : 0;
+      const won = g.finished && g.round.status === 'won';
+      const lost = g.finished && g.round.status === 'lost';
       return {
-        next: { ...cur, round: g.round, wordsSolved: cur.wordsSolved + solved, revision: cur.revision + 1 },
+        next: {
+          ...cur,
+          round: g.round,
+          wordsSolved: cur.wordsSolved + (won ? 1 : 0),
+          wordsLost: (cur.wordsLost ?? 0) + (lost ? 1 : 0),
+          score: (cur.score ?? 0) + (won ? giftsSavedFor(g.round) : 0),
+          revision: cur.revision + 1,
+        },
         result: g,
       };
     });

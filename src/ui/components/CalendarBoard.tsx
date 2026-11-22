@@ -6,7 +6,7 @@ const STATUS_TEXT: Record<DoorStatus, string> = {
   available: 'klar til at åbne',
   inProgress: 'i gang',
   won: 'vundet',
-  lost: 'nissen vandt – kan øves',
+  lost: 'nissen vandt – prøv igen',
   missed: 'ikke åbnet',
 };
 

@@ -175,22 +175,26 @@ export function WorldView({ rewards, gifts, lit, interactive = false, finale, la
           <button
             type="button"
             className="visitor-btn"
+            aria-label="Send rensdyr"
+            title="Send rensdyr"
             onClick={() => {
               play('tap');
               worldRef.current?.sendVisitor('reindeer');
             }}
           >
-            <ReindeerIcon /> Send rensdyr
+            <ReindeerIcon />
           </button>
           <button
             type="button"
             className="visitor-btn visitor-btn--yeti"
+            aria-label="Send yeti"
+            title="Send yeti"
             onClick={() => {
               play('tap');
               worldRef.current?.sendVisitor('yeti');
             }}
           >
-            <YetiIcon /> Send yeti
+            <YetiIcon />
           </button>
         </div>
       )}
@@ -201,7 +205,7 @@ export function WorldView({ rewards, gifts, lit, interactive = false, finale, la
 
 function ReindeerIcon() {
   return (
-    <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
+    <svg viewBox="0 0 32 32" width="34" height="34" aria-hidden="true">
       <path d="M11 6 l-3 -4 M11 6 l2 -4 M11 6 l-4 1 M21 6 l3 -4 M21 6 l-2 -4 M21 6 l4 1" stroke="#7a4f2e" strokeWidth="1.8" strokeLinecap="round" fill="none" />
       <ellipse cx="16" cy="16" rx="8" ry="9" fill="#a66d45" />
       <ellipse cx="16" cy="21" rx="5" ry="4" fill="#e2c3a0" />
@@ -214,7 +218,7 @@ function ReindeerIcon() {
 
 function YetiIcon() {
   return (
-    <svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
+    <svg viewBox="0 0 32 32" width="34" height="34" aria-hidden="true">
       <path d="M8 13 Q12 1 22 3 Q27 5 26 10 Z" fill="#d52b3a" />
       <circle cx="26" cy="10" r="2.4" fill="#f6f2ea" />
       <rect x="6" y="11" width="20" height="4" rx="2" fill="#f6f2ea" />

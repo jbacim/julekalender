@@ -55,13 +55,19 @@ export interface Round {
 export type DayOutcome = 'won' | 'lost';
 
 /** Officielt (første-forsøgs) resultat for en låge 1–23. Uforanderligt når sat. */
+/**
+ * Lågens resultat. Et nederlag kan prøves igen (så alle kan få al pynten);
+ * en sejr er endelig og kan aldrig ændres eller gives igen.
+ */
 export interface DayResult {
   outcome: DayOutcome;
-  /** 10 - fejl ved sejr, 0 ved nederlag. */
+  /** 10 - fejl i den vindende runde, 0 ved nederlag. */
   giftsSaved: number;
   mistakes: number;
   roundId: string;
   completedAt: string;
+  /** Antal afsluttede forsøg på lågen (1 = klaret i første forsøg). */
+  attempts?: number;
 }
 
 export interface DayProgress {
@@ -142,9 +148,28 @@ export interface FreeplayProgress {
   profileId: string;
   cycle: PoolCycle;
   round?: Round;
-  /** Kun til sjov – påvirker aldrig kalenderen. */
+  /** Kun til sjov – påvirker aldrig kalenderen. Antal vundne ord. */
   wordsSolved: number;
+  /** Antal tabte ord (felt tilføjet senere – mangler i ældre gemte data). */
+  wordsLost?: number;
+  /** Point: summen af reddede legegaver i vundne ord (felt tilføjet senere). */
+  score?: number;
   revision: number;
+}
+
+export interface FreeplayStats {
+  won: number;
+  lost: number;
+  score: number;
+  /** Vinderprocent 0–100, afrundet. 0 når intet er spillet. */
+  winPct: number;
+}
+
+export function freeplayStats(fp: FreeplayProgress | undefined): FreeplayStats {
+  const won = fp?.wordsSolved ?? 0;
+  const lost = fp?.wordsLost ?? 0;
+  const total = won + lost;
+  return { won, lost, score: fp?.score ?? 0, winPct: total === 0 ? 0 : Math.round((won / total) * 100) };
 }
 
 export type RewardPlacement = 'tree' | 'world';

@@ -843,11 +843,12 @@ legend {
 .visitor-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: var(--tap);
-  padding: 6px 14px 6px 8px;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  padding: 0;
   border: 0;
-  border-radius: 999px;
+  border-radius: 50%;
   background: rgba(255, 248, 236, 0.94);
   color: var(--ink);
   font-weight: 800;
@@ -1356,6 +1357,33 @@ legend {
 .toggle--disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+.freeplay-score {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto 10px;
+}
+.freeplay-score-item {
+  background: rgba(232, 238, 247, 0.95);
+  border: 2px solid #7b92b2;
+  border-radius: var(--radius-sm);
+  padding: 6px 4px;
+  text-align: center;
+}
+.freeplay-score dt {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #3a4a66;
+}
+.freeplay-score dd {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #22324d;
+  font-variant-numeric: tabular-nums;
 }
 .install-steps {
   padding-left: 1.4em;

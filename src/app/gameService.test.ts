@@ -6,7 +6,7 @@ import { REWARDS } from '../content/rewards';
 import { IndexedDbStorage, MemoryStorage, StorageWriteError } from '../services/storage';
 import { AdjustableDateService, copenhagenInstant } from '../services/dateService';
 import { doorAccess } from '../domain/calendar';
-import type { Profile, Round } from '../domain/types';
+import { freeplayStats, type Profile, type Round } from '../domain/types';
 
 async function winDay(service: GameService, p: Profile, year: number, day: number, mistakes = 0) {
   const s = await service.startDay(p, year, day);
@@ -58,7 +58,7 @@ describe('kalenderforløb', () => {
     expect(await service.startFinale(p, 2026)).toEqual({ ok: false, error: 'notFinaleDay' });
   });
 
-  it('første resultat er uforanderligt; øvelse giver ingen belønning', async () => {
+  it('tabt låge kan prøves igen; sejr giver pynt og gaver, og derefter er lågen klaret', async () => {
     const { service } = setup([2026, 12, 5]);
     const p = await makeProfile(service);
     const s = await service.startDay(p, 2026, 5);
@@ -68,15 +68,29 @@ describe('kalenderforløb', () => {
     let yp = await service.getYear(p.id, 2026);
     expect(yp!.days[5].official).toMatchObject({ outcome: 'lost', giftsSaved: 0 });
 
-    const practice = await winDay(service, p, 2026, 5);
-    expect(practice.mode).toBe('practice');
-    expect(practice.status).toBe('won');
-    expect(practice.word.id).toBe(s.value.word.id); // samme dagsord
-    yp = await service.getYear(p.id, 2026);
-    expect(yp!.days[5].official).toMatchObject({ outcome: 'lost', giftsSaved: 0 });
+    expect(doorStatus(yp, 5, 'playable')).toBe('lost');
     expect(totalGifts(yp)).toBe(0);
     expect(earnedRewards(yp, REWARDS)).toHaveLength(0);
-    expect(doorStatus(yp, 5, 'playable')).toBe('lost');
+
+    // Endnu et nederlag ændrer intet andet end antal forsøg
+    const s2 = await service.startDay(p, 2026, 5);
+    if (!s2.ok) throw new Error();
+    expect(s2.value.mode).toBe('calendar');
+    await loseRound(service, p, 2026, { kind: 'day', day: 5 }, s2.value);
+    yp = await service.getYear(p.id, 2026);
+    expect(yp!.days[5].official).toMatchObject({ outcome: 'lost', giftsSaved: 0, attempts: 2 });
+
+    // Tredje forsøg vindes med 3 fejl: pynten og 7 gaver
+    const retry = await winDay(service, p, 2026, 5, 3);
+    expect(retry.mode).toBe('calendar');
+    expect(retry.status).toBe('won');
+    expect(retry.word.id).toBe(s.value.word.id); // samme dagsord
+    yp = await service.getYear(p.id, 2026);
+    expect(yp!.days[5].official).toMatchObject({ outcome: 'won', giftsSaved: 7, attempts: 3 });
+    expect(totalGifts(yp)).toBe(7);
+    expect(earnedRewards(yp, REWARDS).map((r) => r.day)).toEqual([5]);
+    expect(doorStatus(yp, 5, 'playable')).toBe('won');
+    expect(await service.startDay(p, 2026, 5)).toEqual({ ok: false, error: 'alreadyWon' });
   });
 
   it('vundet låge kan ikke spilles igen for flere gaver', async () => {
@@ -304,7 +318,11 @@ describe('freeplay', () => {
     const r = await service.startFreeplay(p, true);
     for (const l of wrongLetters(r, 10)) await service.guessFreeplay(p.id, r.id, l);
     expect(JSON.stringify(await storage.listYears(p.id))).toBe(before);
-    expect((await service.getFreeplay(p.id))!.wordsSolved).toBe(3);
+    const fp = await service.getFreeplay(p.id);
+    expect(fp!.wordsSolved).toBe(3);
+    expect(fp!.wordsLost).toBe(1);
+    expect(fp!.score).toBe(30); // tre ord uden fejl = 3 x 10 legegaver
+    expect(freeplayStats(fp)).toEqual({ won: 3, lost: 1, score: 30, winPct: 75 });
   });
 
   it('virker uden for sæsonen og gentager ikke ord før puljen er brugt', async () => {

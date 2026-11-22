@@ -3,7 +3,7 @@ import type { ServiceError, GuessOutcome, ActionResult } from '../../app/gameSer
 import { giftsRemaining, isHintAvailable } from '../../domain/round';
 import { normalizeLetter } from '../../domain/letters';
 import type { RoundTarget } from '../../domain/progress';
-import type { Round } from '../../domain/types';
+import { freeplayStats, type FreeplayStats, type Round } from '../../domain/types';
 import { rewardForDay } from '../../content/rewards';
 import { useApp, type GameTarget } from '../AppContext';
 import { Notices } from '../components/common';
@@ -46,6 +46,7 @@ export function GameScreen({ target }: { target: GameTarget }) {
   const [eventKey, setEventKey] = useState(0);
   const [hintOpen, setHintOpen] = useState(false);
   const [rewardJustWon, setRewardJustWon] = useState(false);
+  const [stats, setStats] = useState<FreeplayStats | null>(null);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
   const roundRef = useRef<Round | null>(null);
   roundRef.current = round;
@@ -194,6 +195,19 @@ export function GameScreen({ target }: { target: GameTarget }) {
 
   useEffect(() => () => clearTimeout(moodTimer.current), []);
 
+  const roundStatus = round?.status;
+  useEffect(() => {
+    if (target.kind !== 'freeplay' || !activeProfile) return;
+    let alive = true;
+    service
+      .getFreeplay(activeProfile.id)
+      .then((fp) => alive && setStats(freeplayStats(fp)))
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, [target.kind, activeProfile, service, roundStatus]);
+
   async function openHint() {
     if (!round || !activeProfile || !isHintAvailable(round)) return;
     setHintOpen(true);
@@ -216,9 +230,7 @@ export function GameScreen({ target }: { target: GameTarget }) {
       ? 'Fri leg'
       : target.kind === 'finale'
         ? 'Juleaften – finalen'
-        : round?.mode === 'practice'
-          ? `Låge ${target.day} – øvelse`
-          : `Låge ${target.day}`;
+        : `Låge ${target.day}`;
 
   const remaining = round ? giftsRemaining(round) : 10;
   const finished = round && round.status !== 'playing';
@@ -238,9 +250,10 @@ export function GameScreen({ target }: { target: GameTarget }) {
           Fri leg – tæller ikke med i kalenderen
         </p>
       )}
+      {isFreeplay && stats && <FreeplayScore stats={stats} />}
       {round?.mode === 'practice' && (
         <p className="mode-banner mode-banner--practice" role="note">
-          Øvelse – giver ingen gaver eller pynt. Dagens resultat er allerede gemt.
+          Øverunde fra en tidligere version – giver ingen gaver eller pynt.
         </p>
       )}
       <Notices />
@@ -407,11 +420,16 @@ function ResultPanel({
     );
   } else {
     heading = 'Nissen fik gaverne denne gang';
-    body = <p>Det sker for selv de bedste! Du kan øve dig på lågen – det giver ikke gaver, men det er sjovt.</p>;
+    body = (
+      <p>
+        Det sker for selv de bedste! Prøv igen – du kan prøve lige så mange gange, du vil, og vinder du, får du pynten
+        {reward ? ` (${reward.name.toLowerCase()})` : ''} til dit træ.
+      </p>
+    );
     actions = (
       <>
-        <button type="button" className="btn btn--primary" onClick={onAgain}>
-          Øv på lågen
+        <button type="button" className="btn btn--primary btn--big" onClick={onAgain}>
+          Prøv igen
         </button>
         <button type="button" className="btn btn--ghost" onClick={onHome}>
           Til kalenderen
@@ -436,5 +454,25 @@ function ResultPanel({
       {body}
       <div className="row-actions">{actions}</div>
     </div>
+  );
+}
+
+/** Fri leg-statistik: point, vundne, tabte og vinderprocent (kun for sjov). */
+function FreeplayScore({ stats }: { stats: FreeplayStats }) {
+  const items: [string, string][] = [
+    ['Point', String(stats.score)],
+    ['Vundet', String(stats.won)],
+    ['Tabt', String(stats.lost)],
+    ['Vundet i %', `${stats.winPct} %`],
+  ];
+  return (
+    <dl className="freeplay-score" role="group" aria-label="Din Fri leg-statistik">
+      {items.map(([label, value]) => (
+        <div key={label} className="freeplay-score-item">
+          <dt>{label}</dt>
+          <dd>{value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }

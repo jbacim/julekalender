@@ -37,7 +37,8 @@ Vigtige beslutninger:
 
 - **Domænet er rene funktioner.** `applyGuess`, `startDayRound`, `guessInYear` m.fl. tager state ind og returnerer ny state. Rendering, lyd, animation, dato og lagring kalder domænet, aldrig omvendt.
 - **Belønninger udledes, de gemmes ikke som tællere.** Gaveantal = summen af officielle resultater for låge 1–23, eller præcis 240 efter finalesejr (`totalGifts`). Dekorationer = låger med officiel sejr + stjernen (`earnedRewards`). Dobbelte belønninger er derfor umulige, og intet optjent kan mistes.
-- **Officielt resultat skrives i samme atomare opdatering som det afgørende gæt**, og kun hvis der ikke allerede findes ét. Øverunder (efter et tabt første forsøg) har `mode: 'practice'` og rører aldrig resultatet.
+- **Lågens resultat skrives i samme atomare opdatering som det afgørende gæt.** En tabt låge kan prøves igen lige så mange gange, man vil (samme ord), så alle børn kan få al pynten til deres træ. Vindes den, gives pynten og de gaver, der blev reddet i den vindende runde. En sejr er endelig: lågen kan ikke spilles igen, og belønningen gives aldrig dobbelt. `attempts` tæller forsøgene. (Øverunder med `mode: 'practice'` fra en tidligere version rører aldrig resultatet.)
+- **Fri leg** viser point (reddede legegaver i vundne ord), antal vundne og tabte ord samt vinderprocent. Det er kun til sjov og påvirker aldrig kalenderen.
 - **Atomar read-modify-write.** `storage.updateYear(fn)` kører læs → ren funktion → skriv i én IndexedDB-readwrite-transaktion. Browseren serialiserer transaktioner på tværs af faner, så en forældet fane altid arbejder på nyeste data. Gæt med et forældet runde-id afvises (`stale`). `BroadcastChannel` beder andre faner om at genindlæse.
 - **Animationer er kun præsentation.** Finalesejren gemmes før animationen starter. Lukkes fanen undervejs, mistes intet, og finalen kan ses igen.
 - **Dato:** Al tid går gennem `DateService`. Kalenderdatoen beregnes i Europe/Copenhagen. Adgangen tjekkes igen ved hver spilhandling, når fanen bliver aktiv igen, og hvert 15. sekund. Derfor lukker en åben låge ved midnat den 24./25. december.
@@ -87,7 +88,7 @@ Vigtige beslutninger:
 
 - `src/domain/*.test.ts`: gætteregler, Æ/Ø/Å og Unicode, hint-regler, kalenderdatoer og overgange i dansk tidszone.
 - `src/content/content.test.ts`: indholdsvalidering og deterministisk ordvalg.
-- `src/app/gameService.test.ts`: uforanderligt første resultat, øvelse, genoptagelse, idempotens, isolation mellem profiler og år, sæsonlukning i åben fane, finale (nye ord, én stjerne, præcis 240), Fri leg uden kalenderpåvirkning, lagringsfejl, beskadigede data, og to "faner" mod rigtig (fake) IndexedDB.
+- `src/app/gameService.test.ts`: tabt låge kan prøves igen og sejr er endelig, genoptagelse, idempotens, isolation mellem profiler og år, sæsonlukning i åben fane, finale (nye ord, én stjerne, præcis 240), Fri leg uden kalenderpåvirkning, lagringsfejl, beskadigede data, og to "faner" mod rigtig (fake) IndexedDB.
 - `src/ui/App.test.tsx`: hele flowet i UI'et, QWERTY-tastatur, fysisk tastatur, låste låger, Fri leg, profilskift, fejlbeskeder, uden for sæsonen, midnat i åben fane, finale med 2D-fallback og færre effekter.
 - `e2e/`: tablet (iPad), mobil (320 px) og desktop i Chromium. Tjekker, at der ikke er vandret sidescroll, at tasterne har trykflader på mindst 44 px i højden, at data overlever genindlæsning, og at 3D-træet kan roteres. Afspiller også den rigtige 3D-finale uden konsolfejl.
 

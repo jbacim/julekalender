@@ -60,8 +60,9 @@ export type StartResult =
 /**
  * Starter (eller genoptager) en runde for låge 1–23.
  * - Igangværende runde genoptages altid (genindlæsning/profilskift nulstiller intet).
- * - Uden officielt resultat: officielt første forsøg.
- * - Efter nederlag: øvelse uden belønning.
+ * - Uden resultat eller efter nederlag: et nyt rigtigt forsøg. Vindes det, gives pynt og
+ *   de reddede gaver – så alle børn kan få al pynten til deres træ.
+ * - Efter sejr: lågen er klaret (ingen flere belønninger).
  */
 export function startDayRound(
   yp: YearProgress,
@@ -76,21 +77,16 @@ export function startDayRound(
     return { ok: true, yp, round: dp.round, resumed: true };
   }
   if (dp.official?.outcome === 'won') return { ok: false, error: 'alreadyWon' };
-  const mode = dp.official ? 'practice' : 'calendar';
   const round = createRound({
     id: roundId,
-    mode,
+    mode: 'calendar',
     day,
     year: yp.year,
     word: yp.calendarWords[day - 1],
     difficulty,
     now,
   });
-  const next: DayProgress = {
-    ...dp,
-    round,
-    practiceRoundsPlayed: dp.practiceRoundsPlayed + (mode === 'practice' ? 1 : 0),
-  };
+  const next: DayProgress = { ...dp, round };
   return { ok: true, yp: bump({ ...yp, days: { ...yp.days, [day]: next } }, now), round, resumed: false };
 }
 
@@ -188,7 +184,9 @@ export function guessInYear(
 
   const dp = dayProgress(yp, target.day);
   let nextDp: DayProgress = { ...dp, round };
-  if (res.finished && round.mode === 'calendar' && !dp.official) {
+  // Resultatet opdateres, så længe lågen ikke er vundet. En sejr er endelig (idempotent).
+  // (Ældre gemte øverunder med mode 'practice' ændrer aldrig resultatet.)
+  if (res.finished && round.mode === 'calendar' && dp.official?.outcome !== 'won') {
     nextDp = {
       ...nextDp,
       official: {
@@ -197,6 +195,7 @@ export function guessInYear(
         mistakes: round.mistakes,
         roundId: round.id,
         completedAt: now,
+        attempts: (dp.official?.attempts ?? (dp.official ? 1 : 0)) + 1,
       },
     };
     rewardGranted = round.status === 'won';

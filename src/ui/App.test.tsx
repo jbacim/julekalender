@@ -144,6 +144,10 @@ describe('app-flow', () => {
       await user.click(within(keyboard()).getByRole('button', { name: l }));
     }
     await screen.findByRole('heading', { name: 'Flot klaret!' });
+    const score = screen.getByRole('group', { name: 'Din Fri leg-statistik' });
+    await waitFor(() => expect(within(score).getByText('Vundet').nextSibling?.textContent).toBe('1'));
+    expect(within(score).getByText('Tabt').nextSibling?.textContent).toBe('0');
+    expect(within(score).getByText('Vundet i %').nextSibling?.textContent).toBe('100 %');
     await user.click(screen.getByRole('button', { name: 'Til kalenderen' }));
     await screen.findByRole('status', { name: '0 gaver i alt' });
     expect(await service.getYear(p.id, 2026)).toBeUndefined();
