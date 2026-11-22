@@ -21,7 +21,7 @@ import type {
   WordEntry,
   YearProgress,
 } from '../domain/types';
-import { CALENDAR_OVERRIDES, CALENDAR_WORDS, CONTENT_VERSION, FINALE_WORDS, FREEPLAY_WORDS } from '../content/words';
+import { calendarOverridesFor, CALENDAR_WORDS, CONTENT_VERSION, FINALE_WORDS, FREEPLAY_WORDS } from '../content/words';
 import type { DateService } from '../services/dateService';
 import type { GameStorage } from '../services/storage';
 
@@ -31,7 +31,7 @@ export interface ContentSet {
   freeplay: readonly WordEntry[];
   finale: readonly WordEntry[];
   /** Håndvalgte kalenderord: år → låge → ord-id. */
-  overrides?: Readonly<Record<number, Readonly<Record<number, string>>>>;
+  overridesFor?: (year: number) => Readonly<Record<number, string>>;
 }
 
 export const DEFAULT_CONTENT: ContentSet = {
@@ -39,7 +39,7 @@ export const DEFAULT_CONTENT: ContentSet = {
   calendar: CALENDAR_WORDS,
   freeplay: FREEPLAY_WORDS,
   finale: FINALE_WORDS,
-  overrides: CALENDAR_OVERRIDES,
+  overridesFor: calendarOverridesFor,
 };
 
 export type ServiceError =
@@ -183,7 +183,7 @@ export class GameService {
   async ensureYear(profileId: string, year: number): Promise<YearProgress> {
     const existing = await this.storage.getYear(profileId, year);
     if (existing) return existing;
-    const words = selectCalendarWords(this.content.calendar, year, this.content.version, this.content.overrides?.[year]);
+    const words = selectCalendarWords(this.content.calendar, year, this.content.version, this.content.overridesFor?.(year));
     const yp = await this.storage.updateYear(profileId, year, (cur) => {
       if (cur) return { next: cur, result: cur };
       const created = createYearProgress(profileId, year, this.content.version, words, this.dates.nowIso());

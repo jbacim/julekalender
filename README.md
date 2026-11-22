@@ -70,7 +70,7 @@ Vigtige beslutninger:
 - Et ord må kun stå i én pulje. Ændrer du kalenderpuljen, så hæv `CONTENT_VERSION` (gemte kalendere påvirkes ikke).
 - `npm run validate:content` tjekker dubletter, ugyldige tegn, tomme hints, hints der afslører ordet, overlap og puljestørrelser (≥100 / ≥50 / ≥50). Puljerne har nu 106 kalenderord, 60 Fri leg-ord og 54 finaleord.
 
-**Håndvalgte kalenderord** – `CALENDAR_OVERRIDES` i `words.ts` (år → låge → ord-id) fastlægger enkelte dage. De øvrige låger vælges stadig automatisk og flyttes ikke. 1. december 2026 er sat til "Kalender". Det påvirker kun kalendere, der endnu ikke er oprettet på en enhed.
+**Håndvalgte kalenderord** – `CALENDAR_OVERRIDES` i `words.ts` (år → låge → ord-id) fastlægger enkelte dage. De øvrige låger vælges stadig automatisk og flyttes ikke. 1. december 2026 er sat til "Kalender". `CALENDAR_FIXED_DAYS` gælder hvert år: den 24. er altid "Stjerne" (det er også finalens første ord). Det påvirker kun kalendere, der endnu ikke er oprettet på en enhed.
 
 **Dekorationer** – `src/content/rewards.ts`. Én post pr. dag med id, dansk navn, beskrivelse, placering (`tree` med vinkel/højde eller `world` med x/z), farver og visuel type. Nye visuelle typer kræver en byggefunktion i `src/world/builders.ts` (3D) og `src/ui/world/World2D.tsx` (2D).
 
@@ -90,6 +90,17 @@ Vigtige beslutninger:
 - `src/app/gameService.test.ts`: uforanderligt første resultat, øvelse, genoptagelse, idempotens, isolation mellem profiler og år, sæsonlukning i åben fane, finale (nye ord, én stjerne, præcis 240), Fri leg uden kalenderpåvirkning, lagringsfejl, beskadigede data, og to "faner" mod rigtig (fake) IndexedDB.
 - `src/ui/App.test.tsx`: hele flowet i UI'et, QWERTY-tastatur, fysisk tastatur, låste låger, Fri leg, profilskift, fejlbeskeder, uden for sæsonen, midnat i åben fane, finale med 2D-fallback og færre effekter.
 - `e2e/`: tablet (iPad), mobil (320 px) og desktop i Chromium. Tjekker, at der ikke er vandret sidescroll, at tasterne har trykflader på mindst 44 px i højden, at data overlever genindlæsning, og at 3D-træet kan roteres. Afspiller også den rigtige 3D-finale uden konsolfejl.
+
+## Installation som app (PWA)
+
+Siden kan gemmes på hjemmeskærmen og åbner så i fuld skærm, også offline.
+
+- `public/manifest.webmanifest` indeholder navn, farver og ikoner.
+- `public/sw.js` er service workeren. Navigationer hentes fra netværket først; øvrige filer hentes fra cachen først. Hæv `CACHE`-navnet, hvis cachen skal tømmes helt.
+- `src/services/pwa.ts` registrerer service workeren (kun i produktion), fanger installationsprompten og beder browseren om varig lagring.
+- Forældreområdet har kortet **Gem som app**: en direkte knap på Android/Chrome/Edge og en vejledning på iPhone/iPad (Safari → Del → Føj til hjemmeskærm).
+- Ikonerne laves ud fra `public/icons/icon.svg` med `node scripts/generate-icons.mjs`.
+- På iOS har en installeret app sin egen lagring adskilt fra Safari, så fremskridt følger ikke med. Det står også i forældreområdet.
 
 ## Udgivelse (GitHub Pages)
 

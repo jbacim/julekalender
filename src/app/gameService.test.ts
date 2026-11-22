@@ -142,6 +142,8 @@ describe('kalenderforløb', () => {
     const yb = await service.ensureYear(b.id, 2026);
     expect(ya.calendarWords.map((w) => w.id)).toEqual(yb.calendarWords.map((w) => w.id));
     expect(new Set(ya.calendarWords.map((w) => w.id)).size).toBe(24);
+    expect(ya.calendarWords[23].display).toBe('Stjerne');
+    expect(ya.calendarWords[0].display).toBe('Kalender');
   });
 
   it('gemt kalender ændres ikke af indholdsopdatering', async () => {

@@ -269,6 +269,16 @@ export const CALENDAR_OVERRIDES: Readonly<Record<number, Readonly<Record<number,
   2026: { 1: 'k-kalender' },
 };
 
+/** Faste kalenderord, der gælder HVERT år (vinder over CALENDAR_OVERRIDES). */
+export const CALENDAR_FIXED_DAYS: Readonly<Record<number, string>> = {
+  24: 'k-stjerne', // Juleaften er altid "Stjerne"
+};
+
+/** Alle håndvalgte ord for et år: årets valg plus de faste dage. */
+export function calendarOverridesFor(year: number): Record<number, string> {
+  return { ...CALENDAR_OVERRIDES[year], ...CALENDAR_FIXED_DAYS };
+}
+
 export const ALL_POOLS = {
   calendar: CALENDAR_WORDS,
   freeplay: FREEPLAY_WORDS,

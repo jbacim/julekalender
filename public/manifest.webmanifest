@@ -1,0 +1,20 @@
+{
+  "name": "Julekalender",
+  "short_name": "Julekalender",
+  "description": "Dansk julekalender med ordgætning for børn – red gaverne fra den drilske nisse.",
+  "lang": "da",
+  "dir": "ltr",
+  "id": "./",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#141b3d",
+  "theme_color": "#1c2652",
+  "categories": ["games", "kids", "education"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1326,6 +1326,10 @@ legend {
   opacity: 0.6;
   cursor: not-allowed;
 }
+.install-steps {
+  padding-left: 1.4em;
+  line-height: 1.6;
+}
 .profile-editors {
   list-style: none;
   padding: 0;

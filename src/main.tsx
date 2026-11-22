@@ -4,7 +4,10 @@ import { GameService } from './app/gameService';
 import { AdjustableDateService, SystemDateService } from './services/dateService';
 import { createStorage } from './services/storage';
 import { App } from './ui/App';
+import { setupPwa } from './services/pwa';
 import './ui/styles.css';
+
+setupPwa();
 
 async function boot() {
   const { storage, warning } = await createStorage();

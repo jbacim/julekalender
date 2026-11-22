@@ -1,10 +1,57 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import type { Profile } from '../../domain/types';
 import { useApp } from '../AppContext';
 import { Avatar } from '../art/Avatar';
 import { Dialog, Notices } from '../components/common';
 import { DifficultyPicker } from './ProfilesScreen';
 import { IconBack } from '../art/Icons';
+import { installState, isIos, onInstallStateChange, promptInstall, type InstallState } from '../../services/pwa';
+
+function InstallCard() {
+  const [state, setState] = useState<InstallState>(installState);
+  useEffect(() => onInstallStateChange(() => setState(installState())), []);
+  return (
+    <section className="card">
+      <h2>Gem som app</h2>
+      {state === 'installed' ? (
+        <p>Julekalender kører som app på denne enhed.</p>
+      ) : (
+        <>
+          <p>Læg Julekalender på hjemmeskærmen, så den åbner som en app i fuld skærm – også uden internet.</p>
+          {state === 'promptable' && (
+            <button type="button" className="btn btn--primary" onClick={() => void promptInstall()}>
+              Installer som app
+            </button>
+          )}
+          {state === 'ios' && (
+            <ol className="install-steps">
+              <li>
+                Åbn siden i <strong>Safari</strong>.
+              </li>
+              <li>
+                Tryk på <strong>Del</strong>-knappen (firkanten med en pil op).
+              </li>
+              <li>
+                Vælg <strong>Føj til hjemmeskærm</strong> og tryk <strong>Tilføj</strong>.
+              </li>
+            </ol>
+          )}
+          {state === 'manual' && (
+            <p>
+              Åbn browserens menu (⋮) og vælg <strong>Installer app</strong> eller <strong>Føj til startskærm</strong>.
+            </p>
+          )}
+          {isIos() && (
+            <p className="small-print">
+              På iPhone og iPad har appen sin egen lagring: fremskridt fra Safari følger ikke med ind i appen. Installer gerne, før
+              december begynder.
+            </p>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
 
 function ParentGate({ onPass }: { onPass: () => void }) {
   const { a, b } = useMemo(() => ({ a: 3 + Math.floor(Math.random() * 6), b: 4 + Math.floor(Math.random() * 6) }), []);
@@ -179,6 +226,8 @@ export function ParentsScreen() {
                 onChange={(v) => void updateSettings({ reducedEffects: v })}
               />
             </section>
+
+            <InstallCard />
 
             <section className="card">
               <h2>Profiler</h2>
