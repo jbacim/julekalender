@@ -1,0 +1,49 @@
+import { expect, test } from '@playwright/test';
+
+test('juleaftensfinale i 3D: stjerne, 240 gaver og roterbart træ', async ({ page }, info) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  await page.clock.setFixedTime(new Date('2026-12-24T15:00:00+01:00'));
+  await page.goto('/');
+  await page.getByLabel(/Kaldenavn/).fill('Juleaften');
+  await page.getByRole('button', { name: 'Lav profil' }).click();
+  await page.getByRole('button', { name: /^Låge 24, i dag/ }).click();
+  await expect(page.getByRole('heading', { name: 'Juleaften – finalen' })).toBeVisible();
+  const word = await page.evaluate(
+    () =>
+      new Promise<string>((resolve) => {
+        const r = indexedDB.open('julekalender');
+        r.onsuccess = () => {
+          const all = r.result.transaction('years').objectStore('years').getAll();
+          all.onsuccess = () => resolve(all.result[0].finale.round.word.normalized);
+        };
+      }),
+  );
+  const kb = page.getByRole('group', { name: 'Bogstaver' });
+  for (const l of new Set(word.replace(/[ -]/g, ''))) await kb.getByRole('button', { name: l, exact: true }).click();
+  await page.getByRole('button', { name: 'Se nissen aflevere gaverne' }).click();
+  await expect(page.getByRole('heading', { name: 'Nissen kommer med gaverne …' })).toBeVisible();
+  await page.waitForTimeout(3500);
+  await page.screenshot({ path: `test-results/${info.project.name}-finale-midt.png` });
+  await expect(page.getByRole('heading', { name: 'Alle 240 gaver er tilbage!' })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('status', { name: '240 gaver i alt' })).toBeVisible();
+  // Interaktivt træ: drej med mus og knapper
+  const canvas = page.locator('canvas.world3d-canvas');
+  if (await canvas.count()) {
+    const b = (await canvas.boundingBox())!;
+    await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(b.x + b.width / 2 + 150, b.y + b.height / 2 + 200, { steps: 10 });
+    await page.mouse.up();
+  }
+  await page.getByRole('button', { name: 'Drej til højre' }).click();
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: `test-results/${info.project.name}-finale-slut.png` });
+  // Genindlæsning: stadig vundet, kan ses igen uden nye belønninger
+  await page.reload();
+  await page.getByRole('button', { name: /^Låge 24, i dag: vundet/ }).click();
+  await expect(page.getByRole('button', { name: 'Se finalen igen' })).toBeVisible();
+  await expect(page.getByRole('status', { name: '240 gaver i alt' })).toBeVisible();
+  expect(errors.filter((e) => !/favicon/.test(e))).toEqual([]);
+});
