@@ -44,11 +44,24 @@ export function selectCalendarWords(
   pool: readonly WordEntry[],
   year: number,
   contentVersion: string,
+  /** Håndvalgte ord: lågenummer → ord-id. Erstatter kun de nævnte låger. */
+  overrides: Readonly<Record<number, string>> = {},
 ): WordSnapshot[] {
   if (pool.length < CALENDAR_DAYS) throw new Error('Kalenderpuljen er for lille');
   const sorted = [...pool].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   const rng = mulberry32(hashString(`julekalender:${contentVersion}:${year}`));
-  return shuffle(sorted, rng).slice(0, CALENDAR_DAYS).map(snapshot);
+  const picked = shuffle(sorted, rng).slice(0, CALENDAR_DAYS);
+  const byId = new Map(pool.map((w) => [w.id, w]));
+  for (const [dayStr, id] of Object.entries(overrides)) {
+    const day = Number(dayStr);
+    const word = byId.get(id);
+    if (!word || day < 1 || day > CALENDAR_DAYS) throw new Error(`Ugyldigt håndvalgt ord: låge ${dayStr} → ${id}`);
+    const existing = picked.findIndex((w) => w.id === id);
+    // Står ordet allerede på en anden låge, byttes de, så der aldrig opstår dubletter.
+    if (existing >= 0) [picked[existing], picked[day - 1]] = [picked[day - 1], picked[existing]];
+    else picked[day - 1] = word;
+  }
+  return picked.map(snapshot);
 }
 
 /** Starter en ny blandet gennemgang og undgår at begynde med det senest viste ord. */

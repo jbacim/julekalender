@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CALENDAR_WORDS, FINALE_WORDS, FREEPLAY_WORDS } from './words';
+import { CALENDAR_OVERRIDES, CALENDAR_WORDS, CONTENT_VERSION, FINALE_WORDS, FREEPLAY_WORDS } from './words';
 import { REWARDS } from './rewards';
 import { isValidNormalizedWord, normalizeText } from '../domain/letters';
 import { selectCalendarWords } from '../domain/selection';
@@ -55,6 +55,29 @@ describe('ordindhold', () => {
     expect(new Set(a.map((w) => w.id)).size).toBe(24);
     const c = selectCalendarWords(CALENDAR_WORDS, 2027, 'v1');
     expect(c.map((w) => w.id)).not.toEqual(a.map((w) => w.id));
+  });
+});
+
+describe('håndvalgte kalenderord', () => {
+  it('1. december 2026 er "Kalender", uden dubletter og uden at flytte de andre låger', () => {
+    const auto = selectCalendarWords(CALENDAR_WORDS, 2026, CONTENT_VERSION);
+    const w = selectCalendarWords(CALENDAR_WORDS, 2026, CONTENT_VERSION, CALENDAR_OVERRIDES[2026]);
+    expect(w[0].display).toBe('Kalender');
+    expect(new Set(w.map((x) => x.id)).size).toBe(24);
+    expect(w.slice(1).map((x) => x.id)).toEqual(auto.slice(1).map((x) => x.id));
+  });
+
+  it('alle håndvalgte ord findes i kalenderpuljen', () => {
+    const ids = new Set(CALENDAR_WORDS.map((w) => w.id));
+    for (const days of Object.values(CALENDAR_OVERRIDES)) for (const id of Object.values(days)) expect(ids.has(id), id).toBe(true);
+  });
+
+  it('et håndvalgt ord, der allerede er valgt, byttes i stedet for at blive dubleret', () => {
+    const auto = selectCalendarWords(CALENDAR_WORDS, 2026, CONTENT_VERSION);
+    const w = selectCalendarWords(CALENDAR_WORDS, 2026, CONTENT_VERSION, { 1: auto[4].id });
+    expect(w[0].id).toBe(auto[4].id);
+    expect(w[4].id).toBe(auto[0].id);
+    expect(new Set(w.map((x) => x.id)).size).toBe(24);
   });
 });
 

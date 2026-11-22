@@ -114,8 +114,12 @@ export function buildStar(mat: Materials, color: string): THREE.Group {
   const g = new THREE.Group();
   const geo = new THREE.ExtrudeGeometry(starShape(0.34, 0.15), { depth: 0.1, bevelEnabled: true, bevelSize: 0.03, bevelThickness: 0.03, bevelSegments: 1 });
   geo.center();
-  const star = mesh(geo, mat.get(color, { emissive: '#ffcc33', emissiveIntensity: 0.9, metalness: 0.4, roughness: 0.3 }));
-  g.add(star);
+  const starMat = mat.get(color, { emissive: '#ffcc33', emissiveIntensity: 0.9, metalness: 0.4, roughness: 0.3 });
+  // To krydsede stjerner, så den ligner en stjerne fra alle vinkler
+  const star = mesh(geo, starMat);
+  const star2 = mesh(geo, starMat);
+  star2.rotation.y = Math.PI / 2;
+  g.add(star, star2);
   const light = new THREE.PointLight('#ffe28a', 2.5, 6, 1.5);
   g.add(light);
   return g;
@@ -529,7 +533,15 @@ export function buildHut(mat: Materials): { group: THREE.Group; door: THREE.Vect
   return { group: g, door: new THREE.Vector3(0, 0, 1.2), windowMat };
 }
 
-export function buildNisse(mat: Materials): { group: THREE.Group; sack: THREE.Object3D } {
+export interface NisseRig {
+  group: THREE.Group;
+  sack: THREE.Object3D;
+  /** Skulderled til armene (roteres for at vinke/bære). */
+  armL: THREE.Group;
+  armR: THREE.Group;
+}
+
+export function buildNisse(mat: Materials): NisseRig {
   const g = new THREE.Group();
   const body = mesh(new THREE.ConeGeometry(0.22, 0.5, 12), mat.get('#9aa6bd'), true);
   body.position.y = 0.35;
@@ -559,8 +571,21 @@ export function buildNisse(mat: Materials): { group: THREE.Group; sack: THREE.Ob
   s.scale.set(1, 1.15, 1);
   sack.add(s);
   sack.position.set(-0.22, 0.45, -0.15);
-  g.add(body, belt, head, beard, nose, hat, brim, pom, e1, e2, sack);
-  return { group: g, sack };
+  const arm = (side: number) => {
+    const pivot = new THREE.Group();
+    pivot.position.set(0.13 * side, 0.52, 0);
+    const sleeve = mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.26, 8), mat.get('#9aa6bd'), true);
+    sleeve.position.y = -0.13;
+    const hand = mesh(new THREE.SphereGeometry(0.04, 8, 6), mat.get('#f3c6a5'));
+    hand.position.y = -0.27;
+    pivot.add(sleeve, hand);
+    pivot.rotation.z = 0.25 * side;
+    return pivot;
+  };
+  const armL = arm(-1);
+  const armR = arm(1);
+  g.add(body, belt, head, beard, nose, hat, brim, pom, e1, e2, sack, armL, armR);
+  return { group: g, sack, armL, armR };
 }
 
 /** Deterministiske positioner til gavebunken rundt om træets fod (forrest først). */
@@ -616,4 +641,176 @@ export function buildGift(slot: ReturnType<typeof giftSlots>[number], mat: Mater
   g.position.copy(slot.pos);
   g.rotation.y = slot.rot;
   return g;
+}
+
+/** Sjælden gæst: en venlig yeti med nissehue. Returnerer led til gang og vink. */
+export function buildYeti(mat: Materials): { group: THREE.Group; armL: THREE.Group; armR: THREE.Group; legL: THREE.Group; legR: THREE.Group } {
+  const g = new THREE.Group();
+  const fur = mat.get('#f4f7fb', { roughness: 1 });
+  const furShade = mat.get('#dfe6f0', { roughness: 1 });
+  const skin = mat.get('#8fa3bf', { roughness: 0.9 });
+  const body = mesh(new THREE.CapsuleGeometry(0.55, 0.7, 6, 14), fur, true);
+  body.position.y = 1.35;
+  body.scale.set(1, 1, 0.85);
+  const belly = mesh(new THREE.SphereGeometry(0.42, 12, 10), furShade);
+  belly.position.set(0, 1.25, 0.28);
+  belly.scale.set(1, 1.2, 0.5);
+  const head = mesh(new THREE.SphereGeometry(0.42, 16, 12), fur, true);
+  head.position.y = 2.35;
+  const face = mesh(new THREE.SphereGeometry(0.3, 14, 10), skin);
+  face.position.set(0, 2.3, 0.22);
+  face.scale.set(1, 0.85, 0.6);
+  const eyeGeo = new THREE.SphereGeometry(0.05, 8, 6);
+  const dark = mat.get('#1d2433');
+  const e1 = mesh(eyeGeo, dark);
+  e1.position.set(-0.1, 2.38, 0.4);
+  const e2 = mesh(eyeGeo, dark);
+  e2.position.set(0.1, 2.38, 0.4);
+  const smile = mesh(new THREE.TorusGeometry(0.1, 0.02, 6, 12, Math.PI), dark);
+  smile.position.set(0, 2.22, 0.39);
+  smile.rotation.z = Math.PI;
+  // Nissehue
+  const hat = mesh(new THREE.ConeGeometry(0.36, 0.75, 14), mat.get('#d52b3a'), true);
+  hat.position.set(0.05, 2.95, -0.05);
+  hat.rotation.z = -0.35;
+  const brim = mesh(new THREE.TorusGeometry(0.33, 0.08, 8, 18), mat.get('#f6f2ea'));
+  brim.rotation.x = Math.PI / 2;
+  brim.position.y = 2.66;
+  const pom = mesh(new THREE.SphereGeometry(0.1, 10, 8), mat.get('#f6f2ea'));
+  pom.position.set(0.32, 3.25, -0.05);
+  const limb = (x: number, y: number, len: number, r: number) => {
+    const pivot = new THREE.Group();
+    pivot.position.set(x, y, 0);
+    const l = mesh(new THREE.CapsuleGeometry(r, len, 4, 10), fur, true);
+    l.position.y = -len / 2 - r * 0.5;
+    const end = mesh(new THREE.SphereGeometry(r * 0.95, 8, 6), skin);
+    end.position.y = -len - r;
+    pivot.add(l, end);
+    return pivot;
+  };
+  const armL = limb(-0.62, 1.8, 0.75, 0.16);
+  const armR = limb(0.62, 1.8, 0.75, 0.16);
+  armL.rotation.z = -0.2;
+  armR.rotation.z = 0.2;
+  const legL = limb(-0.25, 0.75, 0.45, 0.2);
+  const legR = limb(0.25, 0.75, 0.45, 0.2);
+  g.add(body, belly, head, face, e1, e2, smile, hat, brim, pom, armL, armR, legL, legR);
+  return { group: g, armL, armR, legL, legR };
+}
+
+export interface SantaRig {
+  /** Hele spandet. Lokal fremadretning er +x. */
+  group: THREE.Group;
+  santaArm: THREE.Group;
+  reindeer: THREE.Object3D[];
+}
+
+/** Julemanden i sin kane med fire rensdyr (forreste til venstre har rød, lysende mule). */
+export function buildSantaSleigh(mat: Materials): SantaRig {
+  const g = new THREE.Group();
+  const red = mat.get('#c4202f', { roughness: 0.5 });
+  const gold = mat.get('#e3b23c', { metalness: 0.7, roughness: 0.3 });
+  const white = mat.get('#f6f2ea');
+  // Kanen
+  const sleigh = new THREE.Group();
+  const seat = mesh(new THREE.BoxGeometry(1.3, 0.45, 0.8), red, true);
+  seat.position.y = 0.55;
+  const back = mesh(new THREE.BoxGeometry(0.22, 0.75, 0.8), red, true);
+  back.position.set(-0.6, 0.85, 0);
+  const curl = mesh(new THREE.TorusGeometry(0.22, 0.08, 8, 16, Math.PI * 1.2), red, true);
+  curl.position.set(0.68, 0.72, 0);
+  curl.rotation.z = -0.4;
+  const trim = mesh(new THREE.BoxGeometry(1.34, 0.06, 0.84), gold);
+  trim.position.y = 0.8;
+  sleigh.add(seat, back, curl, trim);
+  for (const z of [-0.36, 0.36]) {
+    const runner = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-0.75, 0.05, z),
+      new THREE.Vector3(0.6, 0.05, z),
+      new THREE.Vector3(0.95, 0.2, z),
+      new THREE.Vector3(0.9, 0.45, z),
+    ]);
+    sleigh.add(mesh(new THREE.TubeGeometry(runner, 14, 0.035, 6), gold));
+    for (const x of [-0.45, 0.35]) {
+      const post = mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.3, 6), gold);
+      post.position.set(x, 0.2, z);
+      sleigh.add(post);
+    }
+  }
+  // Gavesæk bagi
+  const sack = mesh(new THREE.SphereGeometry(0.32, 12, 10), mat.get('#a77a4a', { roughness: 1 }), true);
+  sack.position.set(-0.32, 1.0, 0.12);
+  sack.scale.set(1, 1.15, 1);
+  const giftA = mesh(new THREE.BoxGeometry(0.22, 0.22, 0.22), mat.get('#2f7d55'));
+  giftA.position.set(-0.1, 1.12, -0.25);
+  giftA.rotation.y = 0.5;
+  const giftB = mesh(new THREE.BoxGeometry(0.18, 0.18, 0.18), mat.get('#3a6cc8'));
+  giftB.position.set(-0.45, 1.25, -0.15);
+  sleigh.add(sack, giftA, giftB);
+  // Julemanden
+  const santa = new THREE.Group();
+  const body = mesh(new THREE.CylinderGeometry(0.24, 0.32, 0.6, 14), red, true);
+  body.position.y = 1.05;
+  const belt = mesh(new THREE.CylinderGeometry(0.29, 0.3, 0.07, 14), mat.get('#222'));
+  belt.position.y = 0.95;
+  const buckle = mesh(new THREE.BoxGeometry(0.03, 0.08, 0.1), gold);
+  buckle.position.set(0.3, 0.95, 0);
+  const head = mesh(new THREE.SphereGeometry(0.17, 14, 12), mat.get('#f3c6a5'), true);
+  head.position.y = 1.5;
+  const beard = mesh(new THREE.SphereGeometry(0.18, 12, 10, 0, Math.PI * 2, Math.PI / 2.4, Math.PI / 2), white);
+  beard.position.set(0.04, 1.46, 0);
+  beard.rotation.z = -Math.PI / 2;
+  const nose = mesh(new THREE.SphereGeometry(0.04, 8, 6), mat.get('#e98b7a'));
+  nose.position.set(0.17, 1.5, 0);
+  const hat = mesh(new THREE.ConeGeometry(0.17, 0.4, 12), red, true);
+  hat.position.set(-0.04, 1.78, 0);
+  hat.rotation.z = 0.4;
+  const brim = mesh(new THREE.TorusGeometry(0.16, 0.045, 6, 16), white);
+  brim.rotation.x = Math.PI / 2;
+  brim.position.y = 1.62;
+  const pom = mesh(new THREE.SphereGeometry(0.06, 8, 6), white);
+  pom.position.set(-0.2, 1.93, 0);
+  const santaArm = new THREE.Group();
+  santaArm.position.set(0, 1.25, 0.26);
+  const sleeve = mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.36, 8), red);
+  sleeve.position.y = -0.18;
+  const mitten = mesh(new THREE.SphereGeometry(0.07, 8, 6), mat.get('#1f1f24'));
+  mitten.position.y = -0.38;
+  santaArm.add(sleeve, mitten);
+  santaArm.rotation.x = -0.4;
+  santa.add(body, belt, buckle, head, beard, nose, hat, brim, pom, santaArm);
+  santa.position.x = 0.05;
+  sleigh.add(santa);
+  g.add(sleigh);
+  // Rensdyrene foran kanen (to par) med seletøj
+  const reindeer: THREE.Object3D[] = [];
+  const harness = mat.get('#6b3a1e');
+  const base = { day: 0, id: 'kane-rensdyr', name: '', description: '', placement: 'world' as const, visual: 'reindeer' as const, position: [0, 0] as [number, number], position2D: [0, 0] as [number, number] };
+  for (const x of [1.9, 3.3]) {
+    for (const z of [-0.42, 0.42]) {
+      const d = buildWorldItem({ ...base, colors: ['#8b5a3c', '#e9d6b8'] }, mat);
+      d.rotation.y = 0;
+      d.scale.setScalar(0.8);
+      d.position.set(x, 0, z);
+      // Rudolf forrest med lysende rød mule
+      if (x === 3.3 && z < 0) {
+        const glow = new THREE.PointLight('#ff4040', 1.2, 2.5, 1.5);
+        glow.position.set(0.8, 1.17 * 0.8, 0);
+        d.add(glow);
+      }
+      g.add(d);
+      reindeer.push(d);
+    }
+    const strap = mesh(new THREE.CylinderGeometry(0.015, 0.015, 1.4, 4), harness);
+    strap.rotation.z = Math.PI / 2;
+    strap.position.set(x - 0.75, 0.6, 0);
+    g.add(strap);
+  }
+  for (const z of [-0.42, 0.42]) {
+    const rein = mesh(new THREE.CylinderGeometry(0.012, 0.012, 2.9, 4), harness);
+    rein.rotation.z = Math.PI / 2;
+    rein.position.set(1.95, 0.75, z);
+    g.add(rein);
+  }
+  return { group: g, santaArm, reindeer };
 }

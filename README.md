@@ -47,6 +47,12 @@ Vigtige beslutninger:
 - **Grafik:** 3D indlæses separat og blokerer aldrig UI'et. Pixel ratio, skygger, antal snefnug og gaveæsker tilpasses enheden, og indstillingen "Færre effekter" tvinger det laveste niveau. Rendering pauser, når fanen er skjult eller scenen er ude af syne, og GPU-ressourcer frigives ved unmount. Uden WebGL, eller hvis grafikkonteksten tabes, vises en tegnet 2D-verden med samme optjente pynt.
 - **Reduceret bevægelse** (systemindstilling eller "Færre effekter"): CSS-animationer slås fra, og finalen vises uden kameraflyvning, med korte trinvise skift.
 
+## Juleverdenens begivenheder
+
+- **Juleaftensfinalen** varer ca. 30 sekunder. Nissen går med sækken fra hytten, gaverne flyver ud på bunken, stjernen spiraler op i toppen, lyset breder sig op gennem træet, og nissen vinker. Undervejs vises korte tekster. Tempo og kameraets keyframes står i `src/world/finaleScript.ts`. Ved reduceret bevægelse vises en rolig version på ca. 8 sekunder.
+- **Julemanden** flyver ind og lander med kane og fire rensdyr (Rudolf forrest) den 24. december. Landingen vises én gang pr. session; derefter står kanen parkeret. I 2D-visningen flyver en kanesilhuet forbi månen.
+- **Besøgende i baggrunden:** Et rensdyr galopperer af og til forbi. Sjældent (10 %, `ThreeWorld.YETI_CHANCE`) kommer en yeti med nissehue, stopper og vinker. Der kommer ingen besøgende under finalen eller ved reduceret bevægelse. Udviklerværktøjet kan sende begge med det samme.
+
 ## Lagring og begrænsninger
 
 - Data ligger i IndexedDB (`julekalender`, skemaversion `DB_VERSION` i `indexedDbStorage.ts`). Hver post har et `schema`-felt; migreringer tilføjes i `validate.ts`/`onupgradeneeded`.
@@ -63,6 +69,8 @@ Vigtige beslutninger:
 - Kun A–Z, Æ, Ø, Å, mellemrum og bindestreg. Hintet må ikke indeholde selve ordet.
 - Et ord må kun stå i én pulje. Ændrer du kalenderpuljen, så hæv `CONTENT_VERSION` (gemte kalendere påvirkes ikke).
 - `npm run validate:content` tjekker dubletter, ugyldige tegn, tomme hints, hints der afslører ordet, overlap og puljestørrelser (≥100 / ≥50 / ≥50). Puljerne har nu 106 kalenderord, 60 Fri leg-ord og 54 finaleord.
+
+**Håndvalgte kalenderord** – `CALENDAR_OVERRIDES` i `words.ts` (år → låge → ord-id) fastlægger enkelte dage. De øvrige låger vælges stadig automatisk og flyttes ikke. 1. december 2026 er sat til "Kalender". Det påvirker kun kalendere, der endnu ikke er oprettet på en enhed.
 
 **Dekorationer** – `src/content/rewards.ts`. Én post pr. dag med id, dansk navn, beskrivelse, placering (`tree` med vinkel/højde eller `world` med x/z), farver og visuel type. Nye visuelle typer kræver en byggefunktion i `src/world/builders.ts` (3D) og `src/ui/world/World2D.tsx` (2D).
 

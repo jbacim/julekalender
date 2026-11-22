@@ -4,16 +4,29 @@ import { REWARDS } from '../../content/rewards';
 import { useApp, useYear } from '../AppContext';
 import { GiftCounter, Notices, TopBar } from '../components/common';
 import { WorldView, type FinaleRequest } from '../world/WorldView';
+import type { FinaleCue } from '../../world/finaleScript';
+
+const CAPTIONS: Partial<Record<FinaleCue, string>> = {
+  door: 'Nissen kigger ud af sin hytte …',
+  walk: 'Han kommer med en kæmpe sæk!',
+  gifts: 'Alle gaverne flyver tilbage under træet!',
+  star: 'Se – stjernen!',
+  starLanded: 'Stjernen er på plads i toppen.',
+  lights: 'Nu lyser hele træet op!',
+  wave: 'Glædelig jul fra nissen!',
+};
 
 /**
  * Finalepræsentation. Sejren og alle belønninger er gemt FØR denne skærm vises,
  * så lukkes fanen undervejs, mistes intet – og finalen kan ses igen uden nye belønninger.
  */
 export function FinaleScreen({ year, replay }: { year: number; replay: boolean }) {
-  const { activeProfile, service, navigate, play, speak, reducedMotion } = useApp();
+  const { activeProfile, service, navigate, play, speak, reducedMotion, today } = useApp();
+  const santaDay = today.year === year && today.month === 12 && today.day === 24;
   const { year: yp, loading } = useYear(activeProfile?.id, year);
   const [phase, setPhase] = useState<'intro' | 'playing' | 'done'>('intro');
   const [key, setKey] = useState(1);
+  const [caption, setCaption] = useState('');
   const doneOnce = useRef(false);
 
   const rewards = useMemo(() => earnedRewards(yp, REWARDS), [yp]);
@@ -28,16 +41,26 @@ export function FinaleScreen({ year, replay }: { year: number; replay: boolean }
     speak('Glædelig jul! Alle gaverne er tilbage, og stjernen lyser i toppen af dit træ.');
   }, [activeProfile, service, year, speak]);
 
+  const onCue = useCallback(
+    (cue: FinaleCue) => {
+      const text = CAPTIONS[cue];
+      if (text) setCaption(text);
+      if (cue === 'starLanded') play('finale');
+      if (cue === 'gifts') play('door');
+    },
+    [play],
+  );
+
   const finale: FinaleRequest | null = useMemo(
-    () => (phase === 'playing' ? { key, fromGifts, onDone } : null),
-    [phase, key, fromGifts, onDone],
+    () => (phase === 'playing' ? { key, fromGifts, onDone, onCue } : null),
+    [phase, key, fromGifts, onDone, onCue],
   );
 
   const won = yp?.finale.status === 'won';
   // Direkte fra sejren: start præsentationen med det samme (knaptrykket var brugerhandlingen).
   useEffect(() => {
     if (!replay && won && phase === 'intro') {
-      play('finale');
+      play('tap');
       setPhase('playing');
     }
   }, [replay, won, phase, play]);
@@ -61,7 +84,8 @@ export function FinaleScreen({ year, replay }: { year: number; replay: boolean }
 
   function startShow() {
     doneOnce.current = false;
-    play('finale');
+    setCaption('');
+    play('tap');
     setKey((k) => k + 1);
     setPhase('playing');
   }
@@ -80,6 +104,8 @@ export function FinaleScreen({ year, replay }: { year: number; replay: boolean }
             lit={phase !== 'playing'}
             interactive={phase === 'done' || (phase === 'intro' && replay)}
             finale={finale}
+            santa={santaDay}
+            santaParkedOnly
             label={`Dit personlige juletræ ${year} med stjerne, ${rewards.length - 1} dekorationer og 240 gaver`}
           />
         </div>
@@ -99,7 +125,10 @@ export function FinaleScreen({ year, replay }: { year: number; replay: boolean }
           )}
           {phase === 'playing' && (
             <>
-              <h1>Nissen kommer med gaverne …</h1>
+              <h1>Nissen kommer med gaverne</h1>
+              <p key={caption} className="finale-caption" aria-live="polite">
+                {caption}
+              </p>
               <button type="button" className="btn btn--ghost" onClick={() => onDone()}>
                 Spring over
               </button>

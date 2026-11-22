@@ -23,10 +23,15 @@ test('juleaftensfinale i 3D: stjerne, 240 gaver og roterbart træ', async ({ pag
   const kb = page.getByRole('group', { name: 'Bogstaver' });
   for (const l of new Set(word.replace(/[ -]/g, ''))) await kb.getByRole('button', { name: l, exact: true }).click();
   await page.getByRole('button', { name: 'Se nissen aflevere gaverne' }).click();
-  await expect(page.getByRole('heading', { name: 'Nissen kommer med gaverne …' })).toBeVisible();
-  await page.waitForTimeout(3500);
-  await page.screenshot({ path: `test-results/${info.project.name}-finale-midt.png` });
-  await expect(page.getByRole('heading', { name: 'Alle 240 gaver er tilbage!' })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('heading', { name: 'Nissen kommer med gaverne' })).toBeVisible();
+  // Finalen varer ca. 30 sekunder – tag billeder undervejs
+  const start = Date.now();
+  for (const [at, name] of [[1.5, 'a-hytte'], [6, 'b-gaar'], [14, 'c-gaver'], [21, 'd-stjerne'], [25, 'e-lys']] as const) {
+    await page.waitForTimeout(Math.max(0, start + at * 1000 - Date.now()));
+    await page.screenshot({ path: `test-results/${info.project.name}-finale-${name}.png` });
+    if (name === 'c-gaver') await expect(page.getByText('Alle gaverne flyver tilbage under træet!')).toBeVisible();
+  }
+  await expect(page.getByRole('heading', { name: 'Alle 240 gaver er tilbage!' })).toBeVisible({ timeout: 45000 });
   await expect(page.getByRole('status', { name: '240 gaver i alt' })).toBeVisible();
   // Interaktivt træ: drej med mus og knapper
   const canvas = page.locator('canvas.world3d-canvas');

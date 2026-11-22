@@ -99,6 +99,7 @@ export function HomeScreen() {
             rewards={rewards}
             gifts={gifts}
             lit={hasStar(yp)}
+            santa={inSeason && today.day === 24}
             label={`Din juleverden med ${rewards.length} ${rewards.length === 1 ? 'dekoration' : 'dekorationer'} og en gavebunke`}
           />
         </div>

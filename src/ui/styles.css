@@ -807,6 +807,17 @@ legend {
 .world2d--lit .w2d-lights circle {
   filter: drop-shadow(0 0 3px #ffd27a);
 }
+.w2d-santa {
+  animation: santa-fly 12s ease-in-out infinite alternate;
+}
+@keyframes santa-fly {
+  from {
+    transform: translate(-260px, 40px);
+  }
+  to {
+    transform: translate(0, 0);
+  }
+}
 .w2d-star {
   animation: star-drop 0.9s cubic-bezier(0.3, 1.4, 0.5, 1);
   transform-origin: 200px 38px;
@@ -1175,6 +1186,13 @@ legend {
   .tree-panel {
     align-self: center;
   }
+}
+.finale-caption {
+  font-size: 1.25rem;
+  font-weight: 800;
+  min-height: 3em;
+  color: var(--red-dark);
+  animation: pop-in 0.4s ease;
 }
 .reward-chips {
   list-style: none;

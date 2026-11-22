@@ -129,6 +129,8 @@ export default function DevPanel({ dates }: { dates: AdjustableDateService }) {
             >
               Tving 2D: {capabilityOverrides.forceNoWebGL ? 'til' : 'fra'}
             </button>
+            <button onClick={() => window.dispatchEvent(new CustomEvent('julekalender:visitor', { detail: 'reindeer' }))}>Send rensdyr</button>
+            <button onClick={() => window.dispatchEvent(new CustomEvent('julekalender:visitor', { detail: 'yeti' }))}>Send yeti</button>
           </div>
         </div>
       )}

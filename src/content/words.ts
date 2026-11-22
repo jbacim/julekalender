@@ -260,6 +260,15 @@ export const FINALE_WORDS: WordEntry[] = build([
   ['x-kling-klang', 'Kling-klang', 'Lyden af klokker, der ringer', 'jul'],
 ]);
 
+/**
+ * Håndvalgte kalenderord pr. år: lågenummer → ord-id fra CALENDAR_WORDS.
+ * De øvrige låger vælges stadig automatisk. Ændringer påvirker kun kalendere,
+ * der endnu ikke er oprettet på enheden (oprettede kalendere har gemt deres ord).
+ */
+export const CALENDAR_OVERRIDES: Readonly<Record<number, Readonly<Record<number, string>>>> = {
+  2026: { 1: 'k-kalender' },
+};
+
 export const ALL_POOLS = {
   calendar: CALENDAR_WORDS,
   freeplay: FREEPLAY_WORDS,

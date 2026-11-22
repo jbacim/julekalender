@@ -26,7 +26,7 @@ export const REWARDS: RewardDefinition[] = [
   { day: 15, id: 'snefnug', name: 'Snefnug', description: 'Et glitrende snefnug af sølv', placement: 'tree', visual: 'snowflake', colors: ['#e8f3ff', '#9cc6f0'], position: [-20, 0.72], position2D: [0, 0] },
   { day: 16, id: 'krans', name: 'Krans på hytten', description: 'En grøn krans med rød sløjfe på nissens dør', placement: 'world', visual: 'wreath', colors: ['#2f6b3a', '#c8283c'], position: [-3.6, -1.05], position2D: [74, 214] },
   { day: 17, id: 'istap', name: 'Istap', description: 'En glasistap, der glimter', placement: 'tree', visual: 'icicle', colors: ['#dff1ff', '#a9d4f5'], position: [175, 0.68], position2D: [0, 0] },
-  { day: 18, id: 'rensdyr', name: 'Rensdyr', description: 'Et venligt rensdyr på besøg', placement: 'world', visual: 'reindeer', colors: ['#8b5a3c', '#e9d6b8'], position: [3.0, -2.4], position2D: [318, 206] },
+  { day: 18, id: 'rensdyr', name: 'Rensdyr', description: 'Et venligt rensdyr på besøg', placement: 'world', visual: 'reindeer', colors: ['#8b5a3c', '#e9d6b8'], position: [-4.6, 0.9], position2D: [318, 206] },
   { day: 19, id: 'engel', name: 'Engel', description: 'En lille engel med gyldne vinger', placement: 'tree', visual: 'angel', colors: ['#fdf7ea', '#f2c94c'], position: [15, 0.86], position2D: [0, 0] },
   { day: 20, id: 'fuglebraet', name: 'Fuglebræt', description: 'Et lille fuglebræt med frø til vinterens fugle', placement: 'world', visual: 'birdFeeder', colors: ['#9a6a3e', '#f4f1ea'], position: [1.6, -3.0], position2D: [250, 190] },
   { day: 21, id: 'risengrod', name: 'Skål risengrød', description: 'En skål grød med smørklat til nissen', placement: 'world', visual: 'porridge', colors: ['#3d6db3', '#f7efd9'], position: [-2.9, -0.5], position2D: [104, 238] },

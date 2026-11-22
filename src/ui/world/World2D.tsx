@@ -208,11 +208,14 @@ export function World2D({
   gifts,
   lit = false,
   label,
+  santa = false,
 }: {
   rewards: RewardDefinition[];
   gifts: number;
   lit?: boolean;
   label: string;
+  /** Den 24. december: julemandens kane flyver forbi månen. */
+  santa?: boolean;
 }) {
   const tree = rewards.filter((r) => r.placement === 'tree' && r.visual !== 'flagGarland' && r.visual !== 'lightString');
   const world = rewards.filter((r) => r.placement === 'world');
@@ -236,6 +239,22 @@ export function World2D({
       {[30, 80, 130, 260, 300, 370, 60, 230].map((x, i) => (
         <circle key={i} cx={x} cy={20 + ((i * 37) % 80)} r={i % 3 === 0 ? 1.6 : 1} fill="#fff" opacity="0.8" />
       ))}
+      {santa && (
+        <g className="w2d-santa" fill="#141b3d">
+          {/* Silhuet af kane og rensdyr foran månen */}
+          <path d="M300 58 h22 q6 0 6 -6 v-6 h-6 v4 h-20 l-4 -6 h-4 l2 10 Z" />
+          <path d="M296 62 h34" stroke="#141b3d" strokeWidth="1.5" />
+          <circle cx="316" cy="40" r="4" />
+          {[338, 352, 366].map((x, i) => (
+            <g key={i}>
+              <path d={`M${x} 50 q5 -5 10 0 l2 -6 l2 1 l-2 7 l-2 4 l-1 5 h-1.5 l-0.5 -4 h-5 l-1 4 h-1.5 l0.5 -5 Z`} />
+              <path d={`M${x + 11} 44 l2 -4 m-2 4 l-2 -4`} stroke="#141b3d" strokeWidth="1" />
+            </g>
+          ))}
+          <circle cx="381" cy="44" r="1.6" fill="#ff4040" />
+          <path d="M328 53 L338 52" stroke="#141b3d" strokeWidth="0.8" />
+        </g>
+      )}
       <path d="M0 230 Q100 205 200 222 T400 214 V300 H0 Z" fill="#eef5ff" />
       <path d="M0 252 Q120 238 220 250 T400 246 V300 H0 Z" fill="#ffffff" />
       {/* Hytte */}

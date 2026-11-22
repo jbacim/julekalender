@@ -10,7 +10,8 @@ import { World2D } from '../world/World2D';
 
 /** Interaktiv visning af et års træ (kun visning – intet kan spilles herfra). */
 export function TreeScreen({ year }: { year: number }) {
-  const { activeProfile, navigate } = useApp();
+  const { activeProfile, navigate, today } = useApp();
+  const santaDay = today.year === year && today.month === 12 && today.day === 24;
   const { year: yp, loading } = useYear(activeProfile?.id, year);
   const rewards = useMemo(() => earnedRewards(yp, REWARDS), [yp]);
   const gifts = totalGifts(yp);
@@ -28,6 +29,7 @@ export function TreeScreen({ year }: { year: number }) {
               rewards={rewards}
               gifts={gifts}
               lit={hasStar(yp)}
+              santa={santaDay}
               interactive
               label={`Juletræ ${year} med ${rewards.length} ${rewards.length === 1 ? 'dekoration' : 'dekorationer'}`}
             />
